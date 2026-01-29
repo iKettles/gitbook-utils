@@ -1,0 +1,11 @@
+{
+  "name": "gitbook-utils",
+  "version": "0.1.0",
+  "description": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@gitbook/api": "^0.159.0"
+  },
+  "devDependencies": {}
+}
