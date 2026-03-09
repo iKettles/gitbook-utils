@@ -3,6 +3,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { GitBookAPI } from "@gitbook/api";
 
 function printUsage() {
@@ -18,25 +19,22 @@ function walkPages(pages, onPage) {
   }
 }
 
-async function main() {
-  const args = process.argv.slice(2);
-  const [spaceId, outputDir] = args;
-
+async function downloadSpacePages(spaceId, outputDir, options = {}) {
   if (!spaceId || !outputDir) {
-    printUsage();
-    process.exit(1);
+    throw new Error("spaceId and outputDir are required");
   }
 
-  const token = process.env.GITBOOK_TOKEN;
+  const token =
+    options.token ?? process.env.GITBOOK_TOKEN ?? process.env.GITBOOK_API_TOKEN;
   if (!token) {
-    console.error("Missing GITBOOK_TOKEN env var");
-    process.exit(1);
+    throw new Error("Missing GITBOOK_TOKEN or GITBOOK_API_TOKEN env var");
   }
 
   const outputPath = resolve(outputDir);
   await mkdir(outputPath, { recursive: true });
 
-  const gitbook = new GitBookAPI({ authToken: token });
+  const gitbook = options.gitbook ?? new GitBookAPI({ authToken: token });
+  const logger = options.logger ?? console;
 
   const latestRevision = await gitbook.spaces.listPages(spaceId, {
     metadata: false,
@@ -45,12 +43,12 @@ async function main() {
 
   const pages = [];
   walkPages(revision.pages, (page) => pages.push(page));
-  console.log(
+  logger.log(
     `🔎 Found ${pages.length} pages in space ${spaceId}, fetching each page and writing to disk...`,
   );
 
   for (const page of pages) {
-    console.log(`📄 Page ID: ${page.id}, Title: ${page.title}`);
+    logger.log(`📄 Page ID: ${page.id}, Title: ${page.title}`);
 
     const { data: pageResponse } = await gitbook.spaces.getPageById(
       spaceId,
@@ -62,12 +60,12 @@ async function main() {
     );
 
     if (pageResponse.computed?.type === "builtin:openapi") {
-      console.log(`⏩  Skipping OpenAPI page.`);
+      logger.log(`⏩  Skipping OpenAPI page.`);
       continue;
     }
 
     if (pageResponse.type === "group") {
-      console.log(`⏩  Skipping group page.`);
+      logger.log(`⏩  Skipping group page.`);
       continue;
     }
 
@@ -78,7 +76,7 @@ async function main() {
       pageFilePath = path.join(path.dirname(pageFilePath), "README.md");
     }
 
-    if (pageResponse.pages.length > 0) {
+    if ((pageResponse.pages ?? []).length > 0) {
       pageFilePath = path.join(pageFilePath, "README");
     }
 
@@ -100,7 +98,25 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+async function main() {
+  const args = process.argv.slice(2);
+  const [spaceId, outputDir] = args;
+
+  if (!spaceId || !outputDir) {
+    printUsage();
+    process.exit(1);
+  }
+
+  try {
+    await downloadSpacePages(spaceId, outputDir);
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
+}
+
+export { downloadSpacePages };

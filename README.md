@@ -12,6 +12,7 @@ A set of utilities to make frequent tasks with the GitBook API easier.
 - Each page is computed, meaning Reusable Content blocks are resolved to their static content.
 - OpenAPI pages are currently skipped.
 - Page variables set in GitBook will be automatically added to the frontmatter of the generated markdown file.
+- Can be used as a CLI or imported as `downloadSpacePages(spaceId, outputDir, options)`.
 
 Usage:
 
