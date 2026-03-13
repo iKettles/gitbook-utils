@@ -70,6 +70,11 @@ async function downloadSpacePages(spaceId, outputDir, options = {}) {
         continue;
       }
 
+      if (pageResponse.type === "link") {
+        logger.log(`⏩  Skipping link page.`);
+        continue;
+      }
+
       let pageFilePath = pageResponse.path;
 
       // Ensure all readme.md files end up with README.md — this reflects the underlying storage (these paths can get lowercased when returned from the API)
