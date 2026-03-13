@@ -48,53 +48,60 @@ async function downloadSpacePages(spaceId, outputDir, options = {}) {
   );
 
   for (const page of pages) {
-    logger.log(`📄 Page ID: ${page.id}, Title: ${page.title}`);
+    try {
+      logger.log(`📄 Page ID: ${page.id}, Title: ${page.title}`);
 
-    const { data: pageResponse } = await gitbook.spaces.getPageById(
-      spaceId,
-      page.id,
-      {
-        format: "markdown",
-        computed: true,
-      },
-    );
+      const { data: pageResponse } = await gitbook.spaces.getPageById(
+        spaceId,
+        page.id,
+        {
+          format: "markdown",
+          computed: true,
+        },
+      );
 
-    if (pageResponse.computed?.type === "builtin:openapi") {
-      logger.log(`⏩  Skipping OpenAPI page.`);
-      continue;
-    }
-
-    if (pageResponse.type === "group") {
-      logger.log(`⏩  Skipping group page.`);
-      continue;
-    }
-
-    let pageFilePath = pageResponse.path;
-
-    // Ensure all readme.md files end up with README.md — this reflects the underlying storage (these paths can get lowercased when returned from the API)
-    if (path.basename(pageFilePath) === "readme.md") {
-      pageFilePath = path.join(path.dirname(pageFilePath), "README.md");
-    }
-
-    if ((pageResponse.pages ?? []).length > 0) {
-      pageFilePath = path.join(pageFilePath, "README");
-    }
-
-    let markdown = pageResponse.markdown;
-
-    // Write variables to frontmatter
-    if (pageResponse.variables) {
-      const frontmatterLines = ["---", "vars:"];
-      for (const [key, value] of Object.entries(pageResponse.variables)) {
-        frontmatterLines.push(` ${key}: ${value}`);
+      if (pageResponse.computed?.type === "builtin:openapi") {
+        logger.log(`⏩  Skipping OpenAPI page.`);
+        continue;
       }
-      frontmatterLines.push("---");
-      markdown = frontmatterLines.join("\n") + "\n\n" + markdown;
-    }
 
-    const filePath = path.join(outputPath, `${pageFilePath}.md`);
-    await mkdir(path.dirname(filePath), { recursive: true });
-    await writeFile(filePath, markdown, "utf-8");
+      if (pageResponse.type === "group") {
+        logger.log(`⏩  Skipping group page.`);
+        continue;
+      }
+
+      let pageFilePath = pageResponse.path;
+
+      // Ensure all readme.md files end up with README.md — this reflects the underlying storage (these paths can get lowercased when returned from the API)
+      if (path.basename(pageFilePath) === "readme.md") {
+        pageFilePath = path.join(path.dirname(pageFilePath), "README.md");
+      }
+
+      if ((pageResponse.pages ?? []).length > 0) {
+        pageFilePath = path.join(pageFilePath, "README");
+      }
+
+      let markdown = pageResponse.markdown;
+
+      // Write variables to frontmatter
+      if (pageResponse.variables) {
+        const frontmatterLines = ["---", "vars:"];
+        for (const [key, value] of Object.entries(pageResponse.variables)) {
+          frontmatterLines.push(` ${key}: ${value}`);
+        }
+        frontmatterLines.push("---");
+        markdown = frontmatterLines.join("\n") + "\n\n" + markdown;
+      }
+
+      const filePath = path.join(outputPath, `${pageFilePath}.md`);
+      await mkdir(path.dirname(filePath), { recursive: true });
+      await writeFile(filePath, markdown, "utf-8");
+    } catch (err) {
+      console.error(
+        `❌  Error processing page ID ${page.id}, Title: ${page.title}:`,
+        err,
+      );
+    }
   }
 }
 
@@ -115,7 +122,10 @@ async function main() {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   main();
 }
 
