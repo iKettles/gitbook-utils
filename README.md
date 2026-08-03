@@ -17,3 +17,18 @@ A set of utilities to make frequent tasks with the GitBook API easier.
 Usage:
 
 `./src/download-space-pages.js $SPACE_ID $OUTPUT_DIR`
+
+## move-space-content
+
+- Moves all of one GitBook space folder's content into another space folder, nested under a new page.
+- The 3rd argument is the name of the page the content is created under; it becomes a folder (`<page>/README.md`) in the destination, with the source content beneath it.
+- The source tree is reorganised to follow GitBook's folder convention: pages with children live at `<page>/README.md`, leaf pages at `<page>.md`. The source homepage (`README.md`) is renamed to a child page, since that slot becomes the new parent page.
+- All assets are moved into the destination's `.gitbook/assets`. Source asset names that collide with existing destination assets are prepended with the source space name.
+- Asset references and internal page links in the moved pages are rewritten so they keep resolving after the move.
+- Internal group headings in the source `SUMMARY.md` are flattened; page nesting is preserved.
+- The destination `SUMMARY.md` is updated, adding the new page (with the moved subtree) as a top-level page. The source folder is left untouched.
+- Can be used as a CLI or imported as `moveSpaceContent(sourceDir, destDir, pageName, options)`.
+
+Usage:
+
+`./src/move-space-content.js $SOURCE_SPACE_DIR $DEST_SPACE_DIR "$PAGE_NAME"`
