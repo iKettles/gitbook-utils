@@ -32,3 +32,17 @@ Usage:
 Usage:
 
 `./src/move-space-content.js $SOURCE_SPACE_DIR $DEST_SPACE_DIR "$PAGE_NAME"`
+
+## merge-spaces
+
+- Merges multiple GitBook space folders into a single space folder.
+- Each source space becomes a top-level group in the merged `SUMMARY.md`, with its pages moved under a folder named after the space.
+- All assets are consolidated into `.gitbook/assets`. When an asset name is duplicated across spaces, every colliding copy is prepended with its space name (e.g. `logo.png` → `spacea-logo.png`).
+- Asset references in the merged pages are rewritten to point at the consolidated (and possibly renamed) assets.
+- Internal group headings within a source space are flattened into its top-level group; page nesting is preserved.
+- A minimal root `README.md` is generated as the merged space's root page.
+- Can be used as a CLI or imported as `mergeSpaces(spaceDirs, outputDir, options)`.
+
+Usage:
+
+`./src/merge-spaces.js $SPACE_DIR_1 $SPACE_DIR_2 [...$SPACE_DIR_N] $OUTPUT_DIR`
