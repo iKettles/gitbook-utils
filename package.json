@@ -5,7 +5,6 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "@gitbook/api": "^0.159.0"
-  },
-  "devDependencies": {}
+    "@gitbook/api": "^0.208.0"
+  }
 }

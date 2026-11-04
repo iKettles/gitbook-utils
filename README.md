@@ -69,3 +69,17 @@ Usage:
 `./src/check-broken-links.js $INPUT_DIR --legacy-host $LEGACY_HOST [--site-id $SITE_ID] [--org-id $ORG_ID] [--output broken-links.csv]`
 
 `--legacy-host` is repeatable and also accepts a comma-separated list. The report is written to `broken-links.csv` by default (override with `--output`).
+
+## download-ai-questions
+
+- Fetches every question visitors have ever asked a site's Ask AI assistant and writes them to a CSV file.
+- All pages are retrieved (the GitBook API result is paginated), with no date filter, so the export covers the full history.
+- Prints the timestamp at which the questions were fetched from the API, both at the start of the run and after the CSV is written.
+- The CSV columns are `id`, `question`, `type`, `askedAt`, `createdAt`, `timesAsked`, `answersCount`, `answeredYes`, `answeredPartially`, `answeredNo`, `feedbackPositive`, `feedbackNegative`, `feedbackUnrated`, `relevanceRelevant`, `relevanceSpam`, `relevanceOffTopic`, `relevanceUnclear`, `visitorHuman`, `visitorAgent`, `visitorBot`, `visitorUnknown`.
+- The output file is optional; when omitted it defaults to `ai-questions-<fetch-timestamp>.csv` in the current directory.
+- Requires `GITBOOK_TOKEN` (the token needs the `site:insights:read` scope).
+- Can be used as a CLI or imported as `downloadAiQuestions(organizationId, siteId, outputFile, options)`.
+
+Usage:
+
+`./src/download-ai-questions.js $ORG_ID $SITE_ID [output.csv]`
