@@ -14,29 +14,27 @@ function printUsage() {
   );
 }
 
-// CSV columns, in order, derived from each site-question's shape.
+// CSV columns, in order, derived from each site-question-answer's shape.
+// Each answer is one individual submission (the raw question a visitor asked,
+// the resolved/canonical phrasing, and that submission's metadata), so the
+// export has one row per question ever submitted rather than one row per
+// deduplicated canonical question.
 const CSV_COLUMNS = [
-  ["id", (q) => q.id],
-  ["question", (q) => q.question],
-  ["type", (q) => q.type],
-  ["askedAt", (q) => q.askedAt],
-  ["createdAt", (q) => q.createdAt],
-  ["timesAsked", (q) => q.stats?.total],
-  ["answersCount", (q) => q.stats?.answers],
-  ["answeredYes", (q) => q.stats?.answered?.yes],
-  ["answeredPartially", (q) => q.stats?.answered?.partially],
-  ["answeredNo", (q) => q.stats?.answered?.no],
-  ["feedbackPositive", (q) => q.stats?.feedback?.positive],
-  ["feedbackNegative", (q) => q.stats?.feedback?.negative],
-  ["feedbackUnrated", (q) => q.stats?.feedback?.unrated],
-  ["relevanceRelevant", (q) => q.stats?.relevance?.relevant],
-  ["relevanceSpam", (q) => q.stats?.relevance?.spam],
-  ["relevanceOffTopic", (q) => q.stats?.relevance?.["off-topic"]],
-  ["relevanceUnclear", (q) => q.stats?.relevance?.unclear],
-  ["visitorHuman", (q) => q.stats?.visitorTypes?.human],
-  ["visitorAgent", (q) => q.stats?.visitorTypes?.agent],
-  ["visitorBot", (q) => q.stats?.visitorTypes?.bot],
-  ["visitorUnknown", (q) => q.stats?.visitorTypes?.unknown],
+  ["id", (a) => a.id],
+  ["questionId", (a) => a.question?.id],
+  ["questionType", (a) => a.question?.type],
+  ["question", (a) => a.input?.text],
+  ["rawInput", (a) => a.input?.raw],
+  ["createdAt", (a) => a.createdAt],
+  ["answered", (a) => a.answered],
+  ["relevance", (a) => a.relevance],
+  ["helpfulness", (a) => a.helpfulness],
+  ["language", (a) => a.language],
+  ["channelType", (a) => a.channel?.type],
+  ["visitorType", (a) => a.visitorType],
+  ["topics", (a) => (a.topics ?? []).join(";")],
+  ["threadId", (a) => a.thread?.id],
+  ["url", (a) => a.urls?.location],
 ];
 
 function csvEscape(value) {
@@ -50,10 +48,10 @@ function csvEscape(value) {
   return str;
 }
 
-function toCsv(questions) {
+function toCsv(answers) {
   const header = CSV_COLUMNS.map(([name]) => csvEscape(name)).join(",");
-  const rows = questions.map((q) =>
-    CSV_COLUMNS.map(([, get]) => csvEscape(get(q))).join(","),
+  const rows = answers.map((a) =>
+    CSV_COLUMNS.map(([, get]) => csvEscape(get(a))).join(","),
   );
   return [header, ...rows].join("\n") + "\n";
 }
@@ -68,11 +66,14 @@ async function fetchAllQuestions(organizationId, siteId, options = {}) {
   const gitbook = options.gitbook ?? new GitBookAPI({ authToken: token });
   const logger = options.logger ?? console;
 
-  const questions = [];
+  // Each "answer" is one individual question submission, so listing answers
+  // (rather than the deduplicated canonical questions) yields every question
+  // that has ever been submitted.
+  const answers = [];
   let page = undefined;
 
   do {
-    const { data } = await gitbook.orgs.listSiteQuestions(
+    const { data } = await gitbook.orgs.listSiteQuestionAnswers(
       organizationId,
       siteId,
       {
@@ -82,13 +83,13 @@ async function fetchAllQuestions(organizationId, siteId, options = {}) {
     );
 
     const items = data.items ?? [];
-    questions.push(...items);
-    logger.log(`📥 Fetched ${questions.length} question(s) so far...`);
+    answers.push(...items);
+    logger.log(`📥 Fetched ${answers.length} question(s) so far...`);
 
     page = data.next?.page;
   } while (page);
 
-  return questions;
+  return answers;
 }
 
 async function downloadAiQuestions(

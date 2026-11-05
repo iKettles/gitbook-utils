@@ -72,10 +72,11 @@ Usage:
 
 ## download-ai-questions
 
-- Fetches every question visitors have ever asked a site's Ask AI assistant and writes them to a CSV file.
+- Fetches every question that has ever been submitted to a site's Ask AI assistant and writes them to a CSV file.
+- One row per individual submission — the full history, not the deduplicated/canonical grouping. This matches the "questions asked" total shown in GitBook's AI Insights. (The related `listSiteQuestions` endpoint groups repeated or similar asks into canonical questions, so it returns a much smaller count.)
 - All pages are retrieved (the GitBook API result is paginated), with no date filter, so the export covers the full history.
 - Prints the timestamp at which the questions were fetched from the API, both at the start of the run and after the CSV is written.
-- The CSV columns are `id`, `question`, `type`, `askedAt`, `createdAt`, `timesAsked`, `answersCount`, `answeredYes`, `answeredPartially`, `answeredNo`, `feedbackPositive`, `feedbackNegative`, `feedbackUnrated`, `relevanceRelevant`, `relevanceSpam`, `relevanceOffTopic`, `relevanceUnclear`, `visitorHuman`, `visitorAgent`, `visitorBot`, `visitorUnknown`.
+- The CSV columns are `id`, `questionId`, `questionType`, `question` (the resolved/canonical phrasing), `rawInput` (what the visitor actually typed), `createdAt`, `answered`, `relevance`, `helpfulness`, `language`, `channelType`, `visitorType`, `topics` (`;`-separated site topic IDs), `threadId`, `url`.
 - The output file is optional; when omitted it defaults to `ai-questions-<fetch-timestamp>.csv` in the current directory.
 - Requires `GITBOOK_TOKEN` (the token needs the `site:insights:read` scope).
 - Can be used as a CLI or imported as `downloadAiQuestions(organizationId, siteId, outputFile, options)`.
